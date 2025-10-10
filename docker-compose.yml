@@ -1,0 +1,39 @@
+# docker-compose.yml (VERSÃO FINAL DE TESTE)
+
+services:
+  db:
+    image: postgres:14
+    container_name: fa_postgres
+    environment:
+      # A senha para o superusuário 'postgres'
+      POSTGRES_PASSWORD: "postgres123" # <-- SUA NOVA SENHA AQUI
+      POSTGRES_DB: fusionauth
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fusionauth"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  fusionauth:
+    image: fusionauth/fusionauth-app:latest
+    container_name: fa_app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/fusionauth
+      DATABASE_ROOT_USERNAME: postgres
+      DATABASE_ROOT_PASSWORD: "postgres123" # <-- SUA NOVA SENHA AQUI
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: "postgres123" # <-- E AQUI TAMBÉM
+      FUSIONAUTH_APP_URL: http://localhost:9011
+      SEARCH_ENGINE_TYPE: database
+    ports:
+      - "9011:9011"
+    restart: unless-stopped
+
+volumes:
+  db_data:
