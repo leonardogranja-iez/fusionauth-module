@@ -1,0 +1,27 @@
+// user.proto
+syntax = "proto3";
+
+package wrapperGrpc;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "fusionauth-module/grpc/gerados/wrapper;wrapperGrpc";
+
+service FusionAuthWrapper {
+  rpc CriarUsuario (CriarUsuarioRequest) returns (google.protobuf.Empty);
+  rpc DeletarUsuario (DeletarUsuarioRequest) returns (google.protobuf.Empty);
+}
+
+message CriarUsuarioRequest {
+  string email  = 1; // email do novo usuário
+  string senha  = 2; // TODO: por enquanto é a senha default
+  string nome   = 3; // nome do novo usuário
+  bool   sistema = 4; // define se vai ser fabrica(true) ou web(false)
+  string grupo  = 5; // o nome do group do qual o novo usuário faz parte
+//  OBS: Esse grupo está sendo passado como o nome do grupo, mas quando o cliente for criar um novo usuário dentro dele mesmo
+//  OBS: ele deve atribuir esse grupo automáticamente usando o uuid do grupo do usuário chamando a request
+}
+
+message DeletarUsuarioRequest {
+  string user_id = 1; // UUID do usuário a ser deletado
+}
