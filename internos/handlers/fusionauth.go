@@ -37,3 +37,19 @@ func (h *FusionAuthGrpcHandler) CriarUsuario(
 	
 	return &emptypb.Empty{}, nil
 }
+
+// internos/handlers/fusionauth_grpc_handler.go
+
+func (h *FusionAuthGrpcHandler) DeletarUsuario(
+	ctx context.Context, 
+	req *wrapperGrpc.DeletarUsuarioRequest,
+) (*emptypb.Empty, error) {
+	
+    err := h.service.DeletarUsuario(req.UserId)
+    if err != nil {
+        return nil, fmt.Errorf("erro ao deletar usuário: %w", err)
+    }
+
+    return &emptypb.Empty{}, nil
+}
+

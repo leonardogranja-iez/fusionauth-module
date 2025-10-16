@@ -25,10 +25,10 @@ func (s *FusionAuthService) CriarUsuario(
 	email,
 	senha,
 	nome,
-	groupName string, // ignora groupId vindo da chamada
-	sistema bool, // ignora tenantId vindo da chamada
+	groupName string,
+	sistema bool,
 ) error {
-	// ⚠️ Hardcoded UUIDs válidos do FusionAuth
+	
 	var tenantId string
 	var appId string
 
@@ -72,7 +72,6 @@ func (s *FusionAuthService) CriarUsuario(
 
 	// Se não veio regErrs, mas userId está vazio, também é erro
 	if regResp.User.Id == "" {
-		fmt.Printf("[ERROR] Register response sem userId: %+v\n", regResp)
 		return fmt.Errorf("registro falhou, resposta inesperada: %+v", regResp)
 	}
 
@@ -105,11 +104,9 @@ func (s *FusionAuthService) CriarUsuario(
 		}
 		_, gmErrs, err := s.client.CreateGroupMembers(memReq)
 		if err != nil {
-			fmt.Printf("[ERROR] CreateGroupMembers: %v\n", err)
 			return fmt.Errorf("erro ao adicionar usuário ao grupo: %w", err)
 		}
 		if gmErrs != nil {
-			fmt.Printf("[ERROR] CreateGroupMembers validation: %+v\n", gmErrs)
 			return fmt.Errorf("erro de validação ao adicionar ao grupo: %+v", gmErrs)
 		}
 	}
@@ -117,3 +114,15 @@ func (s *FusionAuthService) CriarUsuario(
 	return nil
 }
 
+func (s *FusionAuthService) DeletarUsuario(userID string) error {
+    // realiza a chamada de deleção de usuário
+	_, faErrs, err := s.client.DeleteUser(userID) //"_" é o retorno do uuid do cliente, importante pros logs
+    if err != nil {
+        return fmt.Errorf("erro ao chamar DeleteUser: %w", err)
+    }
+    if faErrs != nil {
+        return fmt.Errorf("erro de validação no DeleteUser: %+v", faErrs)
+    }
+
+    return nil
+}
