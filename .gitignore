@@ -1,4 +1,4 @@
 .env
 descripto.pb
 
-./grpc/gerados
+grpc/gerados
