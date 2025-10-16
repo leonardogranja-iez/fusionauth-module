@@ -1,62 +1,89 @@
-# Makefile para gerenciar o ambiente de desenvolvimento do FusionAuth
-
-# --- Variaveis ---
-# Nome do arquivo SQL usado para popular o banco de dados no setup.
-# Nosso script dump.go já cria este arquivo como uma cópia do último backup.
+# # --- Variáveis ---
 SEED_FILE := database/latest.sql
+PROTO_SRC := grpc/wrapper.proto
+PROTO_DESC := descripto.pb
 
-# --- Comandos do Ambiente ---
+# * FUSIONAUTH
+.PHONY: dump
+dump: ## 💾 Gera backup do banco de dados
+	@echo "--> Executando dump..."
+	@go run dump.go
 
-.PHONY: help
-help: ## Mostra esta lista de ajuda
-	@echo "Comandos disponíveis:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+.PHONY: restore
+restore: ## ♻️ Restaura banco a partir do arquivo latest.sql
+	@echo "--> Restaurando banco a partir de $(SEED_FILE)..."
+	@cat $(SEED_FILE) | docker-compose exec -T db psql -U postgres -d fusionauth
 
 .PHONY: setup
-setup: down ## 🚀 Sobe os contêineres e popula o banco de dados com os dados de 'latest.sql'
-	@echo "--> Iniciando o serviço de banco de dados..."
+setup: down ## 🚀 Sobe containers, restaura o banco e inicia tudo
+	@echo "--> Subindo banco de dados..."
 	@docker-compose up -d db
-	@echo "--> Aguardando o banco de dados ficar pronto..."
 	@sleep 5
 	@if [ ! -f $(SEED_FILE) ]; then \
 		echo "ERRO: Arquivo de seed '$(SEED_FILE)' não encontrado. Rode 'make dump' primeiro."; \
 		docker-compose down; \
 		exit 1; \
 	fi
-	@echo "--> Restaurando dados do arquivo $(SEED_FILE)..."
-	@cat $(SEED_FILE) | docker-compose exec -T db psql -U postgres -d fusionauth
-	@echo "--> Subindo todos os serviços..."
+	@$(MAKE) restore
+	@echo "--> Subindo os demais serviços..."
 	@docker-compose up -d
-	@echo "✅ Ambiente pronto e populado!"
+	@echo "✅ Setup completo!"
 
 .PHONY: up
-up: ## Sobe todos os contêineres (sem recriar o banco)
-	@echo "--> Subindo todos os serviços..."
+up: ## 📦 Sobe containers (db + fusionauth)
 	@docker-compose up -d
 
 .PHONY: down
-down: ## Para todos os contêineres
-	@echo "--> Parando todos os serviços..."
+down: ## 🛑 Derruba containers
 	@docker-compose down
 
 .PHONY: clean
-clean: ## ⚠️ Para e remove contêineres, redes E VOLUMES (apaga todos os dados)
-	@echo "--> Removendo contêineres, redes e volumes..."
+clean: ## ⚠️ Remove containers e volumes
 	@docker-compose down -v --remove-orphans
 
+# * GO
+
+.PHONY: run
+run: ## roda o projeto go
+	@go run ./cmd
+
+.PHONY: proto
+proto: ## 🔧 Gera stubs gRPC e descriptor com buf+protoc
+	@echo "--> Limpando diretórios antigos..."
+	@rm -rf grpc/gerados
+	@rm -f $(PROTO_DESC)
+	@echo "--> Gerando stubs com buf..."
+	@buf generate grpc
+	@echo "--> Gerando descriptor (para Envoy transcoder)..."
+	@protoc -Igrpc -I/usr/local/include \
+	  --include_imports \
+	  --include_source_info \
+	  --descriptor_set_out=$(PROTO_DESC) \
+	  $(PROTO_SRC)
+	@echo "✅ Proto e descriptor gerados!"
+
+
+# * GERAIS
+
+.PHONY: all
+all: down up proto run ## 🔄 Derruba, sobe, gera proto e roda o projeto
+
 .PHONY: logs
-logs: ## Mostra os logs de todos os contêineres em tempo real
+logs: ## 📜 Logs dos containers
 	@docker-compose logs -f
 
-# --- Comandos de Banco de Dados ---
-
-.PHONY: dump
-dump: ## Gera um backup do estado atual do banco de dados (usando o script Go)
-	@echo "--> Executando o script de dump..."
-	@go run dump.go
-
-.PHONY: restore
-restore: ## Restaura o banco de dados a partir do arquivo 'latest.sql' (requer que o 'db' esteja rodando)
-	@echo "--> Restaurando dados do arquivo $(SEED_FILE)..."
-	@cat $(SEED_FILE) | docker-compose exec -T db psql -U postgres -d fusionauth
-	@echo "✅ Banco de dados restaurado!"
+help: ## Mostra ajuda
+	@echo "Comandos disponíveis:"
+	@awk '\
+	/^# \* / { \
+	  line=$$0; \
+	  sub(/^# \* /, "", line); \
+	  print line; \
+	  next; \
+	} \
+	/^[a-zA-Z0-9_.-]+:.*?##/ { \
+	  split($$0,a,"##"); \
+	  cmd=$$1; sub(":.*","",cmd); \
+	  desc=a[2]; \
+	  printf "  \033[36m%-15s\033[0m %s\n", cmd, desc; \
+	}' $(MAKEFILE_LIST)

@@ -12,6 +12,8 @@ type Config struct {
 	FusionAuthAPIKey  string
 	FabricaAppID      string
 	FabricaTenantID   string
+	WebAppID          string
+	WebTenantID       string
 }
 
 func Load() *Config {
@@ -24,5 +26,7 @@ func Load() *Config {
 		FusionAuthAPIKey:  os.Getenv("FUSIONAUTH_API_KEY"),
 		FabricaAppID:      os.Getenv("FABRICA_APP_ID"),
 		FabricaTenantID:   os.Getenv("FABRICA_TENANT_ID"),
+		WebAppID:          os.Getenv("WEB_APP_ID"),
+		WebTenantID:       os.Getenv("WEB_TENANT_ID"),
 	}
 }
