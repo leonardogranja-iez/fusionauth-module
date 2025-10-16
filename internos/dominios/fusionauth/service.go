@@ -1,11 +1,12 @@
-package services
+package fusionauth
 
 import (
 	"fmt"
 	"net/url"
 
-	"github.com/FusionAuth/go-client/pkg/fusionauth"
 	"fusionauth-module/internos/config"
+
+	"github.com/FusionAuth/go-client/pkg/fusionauth"
 )
 
 type FusionAuthService struct {
@@ -21,14 +22,14 @@ func NewFusionAuthService(baseURL, apiKey string) *FusionAuthService {
 	return &FusionAuthService{client: cli}
 }
 
-func (s *FusionAuthService) CriarUsuario(
+func (s *FusionAuthService) criarUsuario(
 	email,
 	senha,
 	nome,
 	groupName string,
 	sistema bool,
 ) error {
-	
+
 	var tenantId string
 	var appId string
 
@@ -44,7 +45,7 @@ func (s *FusionAuthService) CriarUsuario(
 	if sistema {
 		tenantId = config.Load().FabricaTenantID
 		appId = config.Load().FabricaAppID
-	} else { 
+	} else {
 		tenantId = config.Load().WebTenantID
 		appId = config.Load().WebAppID
 	}
@@ -78,8 +79,8 @@ func (s *FusionAuthService) CriarUsuario(
 	// 2) Define a senha fixa
 	if senha != "" {
 		_, pwdErrs, err := s.client.ChangePasswordByIdentity(fusionauth.ChangePasswordRequest{
-			LoginId:      email,
-			Password:     senha,
+			LoginId:       email,
+			Password:      senha,
 			ApplicationId: appId,
 		})
 		if err != nil {
@@ -114,15 +115,15 @@ func (s *FusionAuthService) CriarUsuario(
 	return nil
 }
 
-func (s *FusionAuthService) DeletarUsuario(userID string) error {
-    // realiza a chamada de deleção de usuário
+func (s *FusionAuthService) deletarUsuario(userID string) error {
+	// realiza a chamada de deleção de usuário
 	_, faErrs, err := s.client.DeleteUser(userID) //"_" é o retorno do uuid do cliente, importante pros logs
-    if err != nil {
-        return fmt.Errorf("erro ao chamar DeleteUser: %w", err)
-    }
-    if faErrs != nil {
-        return fmt.Errorf("erro de validação no DeleteUser: %+v", faErrs)
-    }
+	if err != nil {
+		return fmt.Errorf("erro ao chamar DeleteUser: %w", err)
+	}
+	if faErrs != nil {
+		return fmt.Errorf("erro de validação no DeleteUser: %+v", faErrs)
+	}
 
-    return nil
+	return nil
 }

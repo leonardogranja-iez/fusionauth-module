@@ -1,10 +1,9 @@
-package handlers
+package fusionauth
 
 import (
 	"context"
 	"fmt"
 
-	"fusionauth-module/internos/services"
 	wrapperGrpc "fusionauth-module/grpc/gerados"
 
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -12,19 +11,19 @@ import (
 
 type FusionAuthGrpcHandler struct {
 	wrapperGrpc.UnimplementedFusionAuthWrapperServer
-	service *services.FusionAuthService
+	service *FusionAuthService
 }
 
-func NewFusionAuthGrpcHandler(service *services.FusionAuthService) *FusionAuthGrpcHandler {
+func NewFusionAuthGrpcHandler(service *FusionAuthService) *FusionAuthGrpcHandler {
 	return &FusionAuthGrpcHandler{service: service}
 }
 
 func (h *FusionAuthGrpcHandler) CriarUsuario(
-	ctx context.Context, 
+	ctx context.Context,
 	req *wrapperGrpc.CriarUsuarioRequest,
 ) (*emptypb.Empty, error) {
-	
-	err := h.service.CriarUsuario(
+
+	err := h.service.criarUsuario(
 		req.Email,
 		req.Senha,
 		req.Nome,
@@ -34,22 +33,21 @@ func (h *FusionAuthGrpcHandler) CriarUsuario(
 	if err != nil {
 		return nil, fmt.Errorf("erro ao criar usuário: %w", err)
 	}
-	
+
 	return &emptypb.Empty{}, nil
 }
 
 // internos/handlers/fusionauth_grpc_handler.go
 
 func (h *FusionAuthGrpcHandler) DeletarUsuario(
-	ctx context.Context, 
+	ctx context.Context,
 	req *wrapperGrpc.DeletarUsuarioRequest,
 ) (*emptypb.Empty, error) {
-	
-    err := h.service.DeletarUsuario(req.UserId)
-    if err != nil {
-        return nil, fmt.Errorf("erro ao deletar usuário: %w", err)
-    }
 
-    return &emptypb.Empty{}, nil
+	err := h.service.deletarUsuario(req.UserId)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao deletar usuário: %w", err)
+	}
+
+	return &emptypb.Empty{}, nil
 }
-
